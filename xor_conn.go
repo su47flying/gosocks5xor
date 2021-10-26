@@ -138,14 +138,25 @@ func (conn *Conn) Read(b []byte) (n int, err error) {
 	if err = conn.Handleshake(); err != nil {
 		return
 	}
-	return conn.c.Read(b)
+
+	l, e := conn.c.Read(b)
+	if e == nil {
+		Socks5OverDeCoder(b, 0, l)
+	}
+	return l, e
 }
 
 func (conn *Conn) Write(b []byte) (n int, err error) {
 	if err = conn.Handleshake(); err != nil {
 		return
 	}
-	return conn.c.Write(b)
+	Socks5OverEnCoder(b, 0, len(b))
+	l, e := conn.c.Write(b)
+	if e != nil {
+		// if write error, the buffer should be decoded
+		Socks5OverDeCoder(b, 0, len(b))
+	}
+	return l, e
 }
 
 func (conn *Conn) Close() error {
