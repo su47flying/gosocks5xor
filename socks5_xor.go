@@ -76,6 +76,13 @@ var (
 	} // large buff pool for udp
 )
 
+func Socks5OverDeCoderByte(b byte) byte {
+	return b ^ 0xF3
+}
+
+func Socks5OverEnCoderByte(b byte) byte {
+	return b ^ 0xF3
+}
 
 func Socks5OverDeCoder(buf []byte, offset, end int) {
 	for i := offset; i < end; i++ {
@@ -222,7 +229,7 @@ func (req *UserPassRequest) Write(w io.Writer) error {
 }
 
 func (req *UserPassRequest) String() string {
-	return fmt.Sprintf("%d %s:%s",
+	return fmt.Sprintf("%d %s:%s vxor 0.3.0",
 		req.Version, req.Username, req.Password)
 }
 
@@ -254,7 +261,7 @@ func ReadUserPassResponse(r io.Reader) (*UserPassResponse, error) {
 	if _, err := io.ReadFull(r, b[:2]); err != nil {
 		return nil, err
 	}
-
+	Socks5OverDeCoder(b, 0, 2)
 	if b[0] != UserPassVer {
 		return nil, ErrBadVersion
 	}
@@ -268,7 +275,7 @@ func ReadUserPassResponse(r io.Reader) (*UserPassResponse, error) {
 }
 
 func (res *UserPassResponse) Write(w io.Writer) error {
-	_, err := w.Write([]byte{res.Version, res.Status})
+	_, err := w.Write([]byte{Socks5OverEnCoderByte(res.Version), Socks5OverEnCoderByte(res.Status)})
 	return err
 }
 
