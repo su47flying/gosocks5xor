@@ -79,13 +79,13 @@ var (
 
 func Socks5OverDeCoder(buf []byte, offset, end int) {
 	for i := offset; i < end; i++ {
-		buf[i] = buf[i] ^ 0x33
+		buf[i] = buf[i] ^ 0xF3
 	}
 }
 
 func Socks5OverEnCoder(buf []byte, offset, end int) {
 	for i := 0; i < end; i++ {
-		buf[i] = buf[i] ^ 0x33
+		buf[i] = buf[i] ^ 0xF3
 	}
 }
 
@@ -166,7 +166,7 @@ func ReadUserPassRequest(r io.Reader) (*UserPassRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	Socks5OverDeCoder(b, 0, n)
 	if b[0] != UserPassVer {
 		return nil, ErrBadVersion
 	}
@@ -182,6 +182,7 @@ func ReadUserPassRequest(r io.Reader) (*UserPassRequest, error) {
 		if _, err := io.ReadFull(r, b[n:length]); err != nil {
 			return nil, err
 		}
+		Socks5OverDeCoder(b, n, length)
 		n = length
 	}
 	req.Username = string(b[2 : 2+ulen])
@@ -192,6 +193,7 @@ func ReadUserPassRequest(r io.Reader) (*UserPassRequest, error) {
 		if _, err := io.ReadFull(r, b[n:length]); err != nil {
 			return nil, err
 		}
+		Socks5OverDeCoder(b, n, length)
 	}
 	req.Password = string(b[3+ulen : length])
 	return req, nil
@@ -214,6 +216,7 @@ func (req *UserPassRequest) Write(w io.Writer) error {
 	copy(b[length:length+plen], req.Password)
 	length += plen
 
+	Socks5OverDeCoder(b, 0, length)
 	_, err := w.Write(b[:length])
 	return err
 }
